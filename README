@@ -1,0 +1,28 @@
+==============================================================
+ PyBBDB -- an interface to the Insidious Big Brother Database
+==============================================================
+
+Installation
+============
+
+To build it:
+
+    python setup.py build
+
+To install it:
+
+    python setup.py install
+
+Type
+
+    python setup.py --help
+
+for other things you can do.
+
+Note: if you're on a Linux box you can just type 'make' and 'make install'
+in the usual manner.
+
+Problems, bugs, etc
+===================
+
+Complain to me (Glenn Hutchings) at zondo42@gmail.com.
