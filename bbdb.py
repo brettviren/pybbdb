@@ -2,11 +2,19 @@
 Interface to the Insidious Big Brother Database
 
 http://bbdb.sourceforge.net
+
+TODO: write output stuff
+TODO: check file version
 """
 
 
+import re
 from pyparsing import (Regex, QuotedString, Keyword, Suppress, Word,
                        Group, OneOrMore, ZeroOrMore, Or, nums, alphanums)
+
+_props = (("coding", r"coding: (.+);", lambda text: text),
+          ("fileversion", r"file-version: (\d+)", lambda text: int(text)),
+          ("userfields", r"user-fields: \((.+)\)", lambda text: text.split()))
 
 
 class BBDB(list):
@@ -14,21 +22,40 @@ class BBDB(list):
     A BBDB database.
     """
 
-    def __init__(self, path=None):
-        if path:
-            self.read(path)
+    def __init__(self, path=None, coding="utf-8-emacs", userfields=[]):
+        self.coding = coding
+        self.fileversion = 6
+        self.userfields = userfields
 
-    def read(self, path):
-        for data in grammar.parseFile(path, parseAll=True):
-            self.add(*data)
+        if path:
+            self.read_file(path)
+
+    def read_file(self, path):
+        lines = []
+        with open(path) as fp:
+            for line in fp:
+                if line.startswith(";"):
+                    for attr, regexp, func in _props:
+                        m = re.search(regexp, line)
+                        if m:
+                            setattr(self, attr, func(m.group(1)))
+                else:
+                    data = grammar.parseString(line, parseAll=True)
+                    self.add(data)
 
     def add(self, *args, **kw):
         entry = Entry(*args, **kw)
         self.append(entry)
         return entry
 
-    def write(self, path):
-        pass
+    def write_file(self, path):
+        with open(path, "w") as fp:
+            fp.write(";; -*-coding: %s;-*-\n" % self.coding)
+            fp.write(";; file-version: %d\n" % self.fileversion)
+            fp.write(";; user-fields: (%s)\n" % " ".join(self.userfields))
+
+            for entry in self:
+                entry.write(fp)
 
 
 class BBDBItem(dict):
@@ -107,6 +134,7 @@ class Entry(BBDBItem):
         return (self.firstname + " " + self.lastname).strip()
 
     def write(self, fp):
+        # FINISH ME.
         pass
 
 
@@ -185,13 +213,14 @@ if __name__ == "__main__":
     path = os.path.expanduser("~/bbdb/bbdb.el")
     bbdb = BBDB(path)
 
-    db = BBDB()
+    db = BBDB(userfields=['spouse', 'kids', 'catchphrase'])
     fred = db.add("Fred", "Flintstone")
 
     fred.add_phone("Home", "555-1234")
 
     fred.add_net("fred@bedrock.org")
     fred.add_note("spouse", "Wilma")
+    fred.add_note("kids", "Pebbles, Bam-Bam")
     fred.add_note("catchphrase", '"Yabba dabba doo!"')
 
     fred.company = "Slate Rock & Gravel"
@@ -201,4 +230,6 @@ if __name__ == "__main__":
     home.city = "Bedrock"
 
     import json
-    print json.dumps(bbdb, sort_keys=False, indent=4, separators=(',', ': '))
+    print json.dumps(db, sort_keys=False, indent=4, separators=(',', ': '))
+
+    db.write_file("bbdb-out.el")
