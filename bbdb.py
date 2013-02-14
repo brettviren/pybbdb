@@ -133,9 +133,42 @@ class Entry(BBDBItem):
     def name(self):
         return (self.firstname + " " + self.lastname).strip()
 
-    def write(self, fp):
+    def records(self):
+        yield quote(self.firstname)
+        yield quote(self.lastname)
+
+        if self.aka:
+            yield "(" + " ".join(map(quote, self.aka)) + ")"
+        else:
+            yield "nil"
+
+        if self.company:
+            yield quote(self.company)
+        else:
+            yield "nil"
+
+        if self.phone:
+            rec = []
+            for items in self.phone.items():
+                rec.append("[" + " ".join(map(quote, items)) + "]")
+            yield "(" + " ".join(rec) + ")"
+        else:
+            yield "nil"
+
+        if self.address:
+            rec = []
+            for tag, address in self.address.items():
+                rec.append("[" + quote(tag) + " " + repr(address) + "]")
+            yield "(" + " ".join(rec) + ")"
+        else:
+            yield "nil"
+
         # FINISH ME.
-        pass
+
+    def write(self, fp):
+        fp.write("[")
+        fp.write(" ".join(list(self.records())))
+        fp.write("]\n")
 
 
 class Address(BBDBItem):
@@ -149,6 +182,19 @@ class Address(BBDBItem):
     def add_street(self, street):
         self["streets"].append(street)
 
+    def records(self):
+        if self.streets:
+            yield "(" + " ".join(map(quote, self.streets)) + ")"
+        else:
+            yield "nil"
+
+        yield quote(self.city)
+        yield quote(self.state)
+        yield quote(self.zipcode)
+        yield quote(self.country)
+
+    def __repr__(self):
+        return "[" + " ".join(list(self.records())) + "]"
 
 def make_grammar():
     """
@@ -205,6 +251,10 @@ def make_grammar():
     return bbdb
 
 
+def quote(string):
+    return '"' + string.replace('"', r'\"') + '"'
+
+
 grammar = make_grammar()
 
 
@@ -229,7 +279,9 @@ if __name__ == "__main__":
     home.add_street("345 Cavestone Road")
     home.city = "Bedrock"
 
-    import json
-    print json.dumps(db, sort_keys=False, indent=4, separators=(',', ': '))
+    import sys
+    fred.add_aka("\"Freddie\"")
+    fred.write(sys.stdout)
 
-    db.write_file("bbdb-out.el")
+    #import json
+    #print json.dumps(db, sort_keys=False, indent=4, separators=(',', ': '))
