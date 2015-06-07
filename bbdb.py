@@ -9,6 +9,8 @@ TODO: check file version
 
 
 import re
+import sys
+
 from pyparsing import (Regex, QuotedString, Keyword, Suppress, Word,
                        Group, OneOrMore, ZeroOrMore, Or, nums, alphanums)
 
@@ -31,7 +33,6 @@ class BBDB(list):
             self.read_file(path)
 
     def read_file(self, path):
-        lines = []
         with open(path) as fp:
             for line in fp:
                 if line.startswith(";"):
@@ -41,21 +42,24 @@ class BBDB(list):
                             setattr(self, attr, func(m.group(1)))
                 else:
                     data = grammar.parseString(line, parseAll=True)
-                    self.add(data)
+                    self.add(*data[0])
 
     def add(self, *args, **kw):
         entry = Entry(*args, **kw)
         self.append(entry)
         return entry
 
+    def write(self, fp=sys.stdout):
+        fp.write(";; -*-coding: %s;-*-\n" % self.coding)
+        fp.write(";; file-version: %d\n" % self.fileversion)
+        fp.write(";; user-fields: (%s)\n" % " ".join(self.userfields))
+
+        for entry in self:
+            entry.write(fp)
+
     def write_file(self, path):
         with open(path, "w") as fp:
-            fp.write(";; -*-coding: %s;-*-\n" % self.coding)
-            fp.write(";; file-version: %d\n" % self.fileversion)
-            fp.write(";; user-fields: (%s)\n" % " ".join(self.userfields))
-
-            for entry in self:
-                entry.write(fp)
+            self.write(fp)
 
 
 class BBDBItem(dict):
@@ -165,7 +169,7 @@ class Entry(BBDBItem):
 
         # FINISH ME.
 
-    def write(self, fp):
+    def write(self, fp=sys.stdout):
         fp.write("[")
         fp.write(" ".join(list(self.records())))
         fp.write("]\n")
@@ -195,6 +199,7 @@ class Address(BBDBItem):
 
     def __repr__(self):
         return "[" + " ".join(list(self.records())) + "]"
+
 
 def make_grammar():
     """
@@ -259,10 +264,6 @@ grammar = make_grammar()
 
 
 if __name__ == "__main__":
-    import os
-    path = os.path.expanduser("~/bbdb/bbdb.el")
-    bbdb = BBDB(path)
-
     db = BBDB(userfields=['spouse', 'kids', 'catchphrase'])
     fred = db.add("Fred", "Flintstone")
 
@@ -279,9 +280,5 @@ if __name__ == "__main__":
     home.add_street("345 Cavestone Road")
     home.city = "Bedrock"
 
-    import sys
     fred.add_aka("\"Freddie\"")
-    fred.write(sys.stdout)
-
-    #import json
-    #print json.dumps(db, sort_keys=False, indent=4, separators=(',', ': '))
+    fred.write()
