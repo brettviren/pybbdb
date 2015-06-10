@@ -1,15 +1,11 @@
 """
-Interface to the Insidious Big Brother Database
-
-http://bbdb.sourceforge.net
-
-TODO: write output stuff
-TODO: check file version
+Interface to BBDB, the Insidious Big Brother Database.
 """
 
 
 import re
 import sys
+from collections import OrderedDict
 
 from pyparsing import (Regex, QuotedString, Keyword, Suppress, Word,
                        Group, OneOrMore, ZeroOrMore, Or, nums, alphanums)
@@ -32,17 +28,20 @@ class BBDB(list):
         if path:
             self.read_file(path)
 
+    def read(self, fp=sys.stdin):
+        for line in fp:
+            if line.startswith(";"):
+                for attr, regexp, func in _props:
+                    m = re.search(regexp, line)
+                    if m:
+                        setattr(self, attr, func(m.group(1)))
+            else:
+                data = grammar.parseString(line, parseAll=True)
+                self.add(*data[0])
+
     def read_file(self, path):
         with open(path) as fp:
-            for line in fp:
-                if line.startswith(";"):
-                    for attr, regexp, func in _props:
-                        m = re.search(regexp, line)
-                        if m:
-                            setattr(self, attr, func(m.group(1)))
-                else:
-                    data = grammar.parseString(line, parseAll=True)
-                    self.add(*data[0])
+            self.read(fp)
 
     def add(self, *args, **kw):
         entry = Entry(*args, **kw)
@@ -51,50 +50,45 @@ class BBDB(list):
 
     def write(self, fp=sys.stdout):
         fp.write(";; -*-coding: %s;-*-\n" % self.coding)
-        fp.write(";; file-version: %d\n" % self.fileversion)
-        fp.write(";; user-fields: (%s)\n" % " ".join(self.userfields))
+        fp.write(";;; file-version: %d\n" % self.fileversion)
+        fp.write(";;; user-fields: (%s)\n" % " ".join(self.userfields))
 
         for entry in self:
             entry.write(fp)
 
     def write_file(self, path):
-        with open(path, "w") as fp:
+        with open(path, "wb") as fp:
             self.write(fp)
 
 
-class BBDBItem(dict):
-    def __getattr__(self, attr):
-        return self[attr]
-
-    def __setattr__(self, attr, value):
-        if attr in self:
-            self[attr] = value
-        else:
-            raise AttributeError("entry has no attribute '%s'" % attr)
+class Item(OrderedDict):
+    def __init__(self):
+        super(Item, self).__init__()
 
 
-class Entry(BBDBItem):
+class Entry(Item):
     """
     A single BBDB entry.
     """
 
     def __init__(self, firstname="", lastname="", aka=[], company="",
                  phone=[], address=[], net=[], notes=[], cache=None):
-        self["firstname"] = firstname
-        self["lastname"] = lastname
-        self["company"] = company
+        super(Entry, self).__init__()
+
+        self.set_name(firstname, lastname)
+        self.set_company(company)
 
         self["aka"] = []
         if aka:
             for name in aka:
                 self.add_aka(name)
 
-        self["phone"] = {}
+        self["phone"] = Item()
         if phone:
             for tag, number in phone:
                 self.add_phone(tag, number)
 
-        self["address"] = {}
+        self["address"] = Item()
         if address:
             for args in address:
                 self.add_address(*args)
@@ -104,7 +98,7 @@ class Entry(BBDBItem):
             for name in net:
                 self.add_net(name)
 
-        self["notes"] = {}
+        self["notes"] = Item()
         if notes:
             for tag, text in notes:
                 self.add_note(tag, text)
@@ -112,8 +106,17 @@ class Entry(BBDBItem):
         self["cache"] = cache
 
     def set_name(self, firstname, lastname):
+        self.set_firstname(firstname)
+        self.set_lastname(lastname)
+
+    def set_firstname(self, firstname):
         self["firstname"] = firstname
+
+    def set_lastname(self, lastname):
         self["lastname"] = lastname
+
+    def set_company(self, company):
+        self["company"] = company
 
     def add_aka(self, name):
         self["aka"].append(name)
@@ -135,7 +138,39 @@ class Entry(BBDBItem):
 
     @property
     def name(self):
-        return (self.firstname + " " + self.lastname).strip()
+        return self.firstname + " " + self.lastname
+
+    @property
+    def firstname(self):
+        return self["firstname"]
+
+    @property
+    def lastname(self):
+        return self["lastname"]
+
+    @property
+    def company(self):
+        return self["company"]
+
+    @property
+    def aka(self):
+        return self["aka"]
+
+    @property
+    def phone(self):
+        return self["phone"]
+
+    @property
+    def address(self):
+        return self["address"]
+
+    @property
+    def net(self):
+        return self["net"]
+
+    @property
+    def notes(self):
+        return self["notes"]
 
     def records(self):
         yield quote(self.firstname)
@@ -167,7 +202,20 @@ class Entry(BBDBItem):
         else:
             yield "nil"
 
-        # FINISH ME.
+        if self.net:
+            yield "(" + " ".join(map(quote, self.net)) + ")"
+        else:
+            yield "nil"
+
+        if self.notes:
+            rec = []
+            for tag, text in self.notes.items():
+                rec.append("(" + tag + " . " + quote(text) + ")")
+            yield "(" + " ".join(rec) + ")"
+        else:
+            yield "nil"
+
+        yield "nil"
 
     def write(self, fp=sys.stdout):
         fp.write("[")
@@ -175,16 +223,51 @@ class Entry(BBDBItem):
         fp.write("]\n")
 
 
-class Address(BBDBItem):
+class Address(Item):
     def __init__(self, streets=[], city="", state="", zipcode="", country=""):
+        super(Address, self).__init__()
+
         self["streets"] = list(streets)
+
+        self.set_city(city)
+        self.set_state(state)
+        self.set_zipcode(zipcode)
+        self.set_country(country)
+
+    def set_city(self, city):
         self["city"] = city
+
+    def set_state(self, state):
         self["state"] = state
+
+    def set_zipcode(self, zipcode):
         self["zipcode"] = zipcode
+
+    def set_country(self, country):
         self["country"] = country
 
     def add_street(self, street):
         self["streets"].append(street)
+
+    @property
+    def streets(self):
+        return self["streets"]
+
+    @property
+    def city(self):
+        return self["city"]
+
+    @property
+    def state(self):
+        return self["state"]
+
+    @property
+    def zipcode(self):
+        return self["zipcode"]
+
+    @property
+    def country(self):
+        return self["country"]
 
     def records(self):
         if self.streets:
@@ -198,7 +281,7 @@ class Address(BBDBItem):
         yield quote(self.country)
 
     def __repr__(self):
-        return "[" + " ".join(list(self.records())) + "]"
+        return " ".join(list(self.records()))
 
 
 def make_grammar():
@@ -208,7 +291,7 @@ def make_grammar():
 
     # Define the low-level entities.
     string = QuotedString(quoteChar='"', escChar='\\')
-    string.setParseAction(lambda tokens: tokens[0].strip())
+    string.setParseAction(lambda tokens: tokens[0])
 
     nil = Keyword("nil")
     nil.setParseAction(lambda tokens: [None])
@@ -274,11 +357,12 @@ if __name__ == "__main__":
     fred.add_note("kids", "Pebbles, Bam-Bam")
     fred.add_note("catchphrase", '"Yabba dabba doo!"')
 
-    fred.company = "Slate Rock & Gravel"
+    fred.set_company("Slate Rock & Gravel")
 
     home = fred.add_address("Home")
     home.add_street("345 Cavestone Road")
-    home.city = "Bedrock"
+    home.set_city("Bedrock")
 
-    fred.add_aka("\"Freddie\"")
-    fred.write()
+    fred.add_aka("Freddie")
+
+    db.write()
