@@ -1,7 +1,7 @@
 ;; EBNF syntax definition for BBDB (version 2).
 
 bbdb            = {bbdb_entry}* .
-bbdb_entry      = "[" name aka company phone address net notes cache "]" .
+bbdb_entry      = "[" name aka company phone address net fields cache "]" .
 
 name            = name_first name_last .
 name_first      = string .
@@ -19,9 +19,9 @@ phone_usa       = {integer}+ .
 phone_nonusa    = string .
 
 address         = "(" {address_entry}+ ")" | "nil" .
-address_entry   = "[" address_tag address_list city state zipcode country "]" .
+address_entry   = "[" address_tag address_lines city state zipcode country "]" .
 address_tag     = string .
-address_list    = "(" {string}+ ")" .
+address_lines   = "(" {string}+ ")" .
 city            = string .
 state           = string .
 zipcode         = string .
@@ -29,8 +29,8 @@ country         = string .
 
 net             = "(" {string}+ ")" | "nil" .
 
-notes           = "(" {note}+ ")" | "nil" .
-note            = "(" atom "." string ")" .
+fields          = "(" {field}+ ")" | "nil" .
+field           = "(" atom "." string ")" .
 
 cache           = "nil" .
 
