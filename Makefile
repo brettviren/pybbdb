@@ -1,18 +1,18 @@
-# Makefile for python module.
+# Makefile for PyBBDB.
 
-SETUP = python setup.py
+PYTHON = python$(VER)
+SETUP  = $(PYTHON) setup.py
 
-SRC_FORMATS = gztar,zip
+CLEANFILES = build dist *.egg* *.zip *.el
 
 .DEFAULT:;	@ $(SETUP) $@
-.PHONY:		build dist
+.PHONY:		build
 
 all:		build
-tags:;		find . -name '*.py' | xargs etags
 
 build:;		@ $(SETUP) $@
-sdist:;		@ $(SETUP) $@ --formats=$(SRC_FORMATS)
 
-upload:;	@ $(SETUP) sdist upload
+test:;		$(PYTHON) -m doctest README
 
-clean:;		rm -rf MANIFEST PKG-INFO build dist
+clean:;		@ $(SETUP) $@
+		rm -rf $(CLEANFILES)
