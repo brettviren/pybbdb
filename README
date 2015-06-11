@@ -1,6 +1,6 @@
-==============
- About PyBBDB
-==============
+==============================================================
+ PyBBDB -- an interface to the Insidious Big Brother Database
+==============================================================
 
 .. contents::
 
@@ -9,14 +9,14 @@ Introduction
 
 PyBBDB may sound like a rude noise, but it is actually a Python interface
 to the Insidious Big Brother Database (BBDB_), an address book used with
-`GNU Emacs`_.  You can find out more about BBDB on the `Emacs Wiki`_.
+`GNU Emacs`_.  You can find out more about BBDB on the `Emacs Wiki`_.  The
+PyBBDB source repo is hosted at Bitbucket_.
+
 
 .. note::
 
    This module only handles BBDB version 2.  There is a version 3 in
    development on Savannah_, but there has been no public release as yet.
-
-You can find the source repo on Bitbucket_.
 
 Installation
 ============
