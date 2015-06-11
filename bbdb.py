@@ -42,13 +42,22 @@ def make_grammar():
         return d
 
     def make_address_entry(t):
-        return t[0].tag, Address(t[0].lines, t[0].city, t[0].state,
-                                 t[0].zipcode, t[0].country)
+        return t[0].tag, Address(lines=t[0].lines,
+                                 city=t[0].city,
+                                 state=t[0].state,
+                                 zipcode=t[0].zipcode,
+                                 country=t[0].country)
 
     def make_record(t):
-        return Record(t[0].firstname, t[0].lastname, t[0].aka,
-                      t[0].company, t[0].phone, t[0].address,
-                      t[0].net, t[0].fields, t[0].cache)
+        return Record(firstname=t[0].firstname,
+                      lastname=t[0].lastname,
+                      aka=t[0].aka,
+                      company=t[0].company,
+                      phone=t[0].phone,
+                      address=t[0].address,
+                      net=t[0].net,
+                      fields=t[0].fields,
+                      cache=t[0].cache)
 
     # Phone.
     phone_usa = Group(OneOrMore(integer))
@@ -111,14 +120,16 @@ class BBDB(odict):
              ("fileversion", r"file-version: (\d+)", lambda s: int(s)),
              ("userfields", r"user-fields: \((.+)\)", lambda s: s.split()))
 
-    def __init__(self, path=None, coding="utf-8-emacs", fileversion=6,
-                 userfields=[], records=[]):
+    def __init__(self, path=None, **kw):
         super(BBDB, self).__init__()
 
-        self["coding"] = coding
-        self["fileversion"] = fileversion
-        self["userfields"] = userfields
+        self["coding"] = kw.get("coding", "utf-8-emacs")
+        self["fileversion"] = kw.get("fileversion", 6)
+        self["userfields"] = kw.get("userfields", [])
         self["records"] = []
+
+        for data in kw.get("records", []):
+            self["records"].append(Record(**data))
 
         if path:
             self.read_file(path)
@@ -140,22 +151,27 @@ class BBDB(odict):
         return self["records"]
 
     def read(self, fp=sys.stdin):
-        for line in fp:
+        text = fp.read()
+
+        for line in text.split("\n"):
             if line.startswith(";"):
                 for attr, regexp, func in self.props:
                     m = re.search(regexp, line)
                     if m:
                         self[attr] = func(m.group(1))
-            else:
-                records = grammar.parseString(line, parseAll=True)
-                self.records.extend(records)
+
+        records = parse(text)
+        self.records.extend(records)
 
     def read_file(self, path):
         with open(path) as fp:
             self.read(fp)
 
-    def add_record(self, *args, **kw):
-        rec = Record(*args, **kw)
+    def add_record(self, firstname="", lastname="", aka=[], company="",
+                   phone={}, address={}, net=[], fields={}):
+        rec = Record(firstname=firstname, lastname=lastname, aka=aka,
+                     company=company, phone=phone, address=address,
+                     net=net, fields=fields)
         self.records.append(rec)
         return rec
 
@@ -190,19 +206,21 @@ class Record(odict):
     A single BBDB record.
     """
 
-    def __init__(self, firstname="", lastname="", aka=[], company="",
-                 phone={}, address={}, net=[], fields={}, cache=None):
+    def __init__(self, **kw):
         super(Record, self).__init__()
 
-        self["firstname"] = firstname
-        self["lastname"] = lastname
-        self["company"] = company
-        self["aka"] = aka
-        self["phone"] = odict(phone)
-        self["address"] = odict(address)
-        self["net"] = net
-        self["fields"] = odict(fields)
-        self["cache"] = cache
+        self["firstname"] = kw.get("firstname", "")
+        self["lastname"] = kw.get("lastname", "")
+        self["company"] = kw.get("company", "")
+        self["aka"] = kw.get("aka", [])
+        self["phone"] = odict(kw.get("phone", {}))
+        self["address"] = odict()
+        self["net"] = kw.get("net", [])
+        self["fields"] = odict(kw.get("fields", {}))
+        self["cache"] = kw.get("cache", None)
+
+        for tag, data in kw.get("address", {}).items():
+            self["address"][tag] = Address(**data)
 
     def set_name(self, firstname, lastname):
         self.set_firstname(firstname)
@@ -225,7 +243,8 @@ class Record(odict):
 
     def add_address(self, tag, lines=[], city="", state="",
                     zipcode="", country=""):
-        address = Address(lines, city, state, zipcode, country)
+        address = Address(lines=lines, city=city, state=state,
+                          zipcode=zipcode, country=country)
         self["address"][tag] = address
         return address
 
@@ -322,15 +341,17 @@ class Record(odict):
 
 
 class Address(odict):
-    def __init__(self, lines=[], city="", state="", zipcode="", country=""):
+    def __init__(self, **kw):
         super(Address, self).__init__()
 
-        self["lines"] = list(lines)
+        self["lines"] = list(kw.get("lines", []))
+        self["city"] = kw.get("city", "")
+        self["state"] = kw.get("state", "")
+        self["zipcode"] = kw.get("zipcode", "")
+        self["country"] = kw.get("country", "")
 
-        self.set_city(city)
-        self.set_state(state)
-        self.set_zipcode(zipcode)
-        self.set_country(country)
+    def add_line(self, *lines):
+        self["lines"].extend(lines)
 
     def set_city(self, city):
         self["city"] = city
@@ -343,9 +364,6 @@ class Address(odict):
 
     def set_country(self, country):
         self["country"] = country
-
-    def add_line(self, *lines):
-        self["lines"].extend(lines)
 
     @property
     def lines(self):

@@ -41,10 +41,10 @@ To create a new, empty database::
 Creating new records
 --------------------
 
-To add a new record, use the ``add_record()`` method, giving the first and
-last names::
+To add a new record, use the ``add_record()`` method, specifying the
+attributes you want to set::
 
-    >>> fred = db.add_record("Fred", "Flintstone")
+    >>> fred = db.add_record(firstname="Fred", lastname="Flintstone")
     >>> fred
     <Record: Fred Flintstone>
 
@@ -199,6 +199,14 @@ serialize it to other formats.  For example, JSON::
             }
         ]
     }
+
+Here's a vague sketch of how to recreate a database from a dict::
+
+    >>> text = json.dumps(db, indent=4)
+    >>> data = json.loads(text)
+    >>> newdb = BBDB(**data)
+    >>> json.dump(newdb, sys.stdout, indent=4)
+    >>> newdb == db
 
 Release history
 ===============
