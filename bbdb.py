@@ -4,52 +4,164 @@ Interface to BBDB, the Insidious Big Brother Database.
 
 import re
 import sys
-from collections import OrderedDict
+from collections import OrderedDict as odict
 
 from pyparsing import (Regex, QuotedString, Keyword, Suppress, Word,
                        Group, OneOrMore, ZeroOrMore, Or, nums, alphanums)
 
-_props = (("coding", r"coding: (.+);", lambda text: text),
-          ("fileversion", r"file-version: (\d+)", lambda text: int(text)),
-          ("userfields", r"user-fields: \((.+)\)", lambda text: text.split()))
+
+def make_grammar():
+    """
+    Construct the BBDB grammar.  See bbdb.ebnf for the specification.
+    """
+
+    # Define the low-level entities.
+    string = QuotedString(quoteChar='"', escChar='\\')
+    string.setParseAction(lambda t: t[0])
+
+    nil = Keyword("nil")
+    nil.setParseAction(lambda t: [None])
+
+    atom = Word(alphanums + '-')
+    dot = Suppress(Keyword("."))
+
+    integer = Word(nums)
+    integer.setParseAction(lambda t: int(t[0]))
+
+    # Helper functions for the brace types.
+    LP, RP, LB, RB = map(Suppress, "()[]")
+    Paren = lambda arg: LP + Group(arg) + RP
+    Bracket = lambda arg: LB + Group(arg) + RB
+
+    # Helper functions for building return values.
+    def make_odict(t):
+        d = odict()
+        if t[0]:
+            for k, v in t[0]:
+                d[k] = v
+        return d
+
+    def make_address_entry(t):
+        return t[0].tag, Address(t[0].lines, t[0].city, t[0].state,
+                                 t[0].zipcode, t[0].country)
+
+    def make_record(t):
+        return Record(t[0].firstname, t[0].lastname, t[0].aka,
+                      t[0].company, t[0].phone, t[0].address,
+                      t[0].net, t[0].fields, t[0].cache)
+
+    # Phone.
+    phone_usa = Group(OneOrMore(integer))
+    phone_nonusa = string
+    phone_entry = Bracket(string("tag") + Or([phone_usa, phone_nonusa]))
+    phone = Or([Paren(OneOrMore(phone_entry)), nil])("phone")
+    phone.setParseAction(make_odict)
+
+    # Address.
+    lines = Paren(OneOrMore(string))("lines")
+    lines.setParseAction(lambda t: t.asList())
+
+    address_entry = Bracket(string("tag") + lines + string("city") +
+                            string("state") + string("zipcode") +
+                            string("country"))
+    address_entry.setParseAction(make_address_entry)
+    address = Or([Paren(OneOrMore(address_entry)), nil])("address")
+    address.setParseAction(make_odict)
+
+    # Field.
+    field = Paren(atom + dot + string)
+    fields = Or([Paren(OneOrMore(field)), nil])("fields")
+    fields.setParseAction(make_odict)
+
+    # Other parts of an entry.
+    name = string("firstname") + string("lastname")
+    company = Or([string, nil])("company")
+
+    aka = Or([Paren(OneOrMore(string)), nil])("aka")
+    aka.setParseAction(lambda t: t.asList())
+
+    net = Or([Paren(OneOrMore(string)), nil])("net")
+    net.setParseAction(lambda t: t.asList())
+
+    cache = nil("cache")
+
+    # A single record.
+    record = Bracket(name + aka + company + phone + address + net +
+                     fields + cache)
+
+    record.setParseAction(make_record)
+
+    # All the records.
+    bbdb = ZeroOrMore(record)
+    bbdb.setParseAction(lambda t: t.asList())
+
+    # Define comment syntax.
+    comment = Regex(r";.*")
+    bbdb.ignore(comment)
+
+    return bbdb
 
 
-class BBDB(list):
+class BBDB(odict):
     """
     A BBDB database.
     """
 
-    def __init__(self, path=None, coding="utf-8-emacs", userfields=[]):
-        self.coding = coding
-        self.fileversion = 6
-        self.userfields = userfields
+    props = (("coding", r"coding: (.+);", lambda s: s),
+             ("fileversion", r"file-version: (\d+)", lambda s: int(s)),
+             ("userfields", r"user-fields: \((.+)\)", lambda s: s.split()))
+
+    def __init__(self, path=None, coding="utf-8-emacs", fileversion=6,
+                 userfields=[], records=[]):
+        super(BBDB, self).__init__()
+
+        self["coding"] = coding
+        self["fileversion"] = fileversion
+        self["userfields"] = userfields
+        self["records"] = []
 
         if path:
             self.read_file(path)
 
+    @property
+    def coding(self):
+        return self["coding"]
+
+    @property
+    def fileversion(self):
+        return self["fileversion"]
+
+    @property
+    def userfields(self):
+        return self["userfields"]
+
+    @property
+    def records(self):
+        return self["records"]
+
     def read(self, fp=sys.stdin):
         for line in fp:
             if line.startswith(";"):
-                for attr, regexp, func in _props:
+                for attr, regexp, func in self.props:
                     m = re.search(regexp, line)
                     if m:
-                        setattr(self, attr, func(m.group(1)))
+                        self[attr] = func(m.group(1))
             else:
-                data = grammar.parseString(line, parseAll=True)
-                self.add(*data[0])
+                records = grammar.parseString(line, parseAll=True)
+                self.records.extend(records)
 
     def read_file(self, path):
         with open(path) as fp:
             self.read(fp)
 
-    def add(self, *args, **kw):
-        entry = BBDBEntry(*args, **kw)
-        self.append(entry)
-        return entry
+    def add_record(self, *args, **kw):
+        rec = Record(*args, **kw)
+        self.records.append(rec)
+        return rec
 
     def update_fields(self):
-        for entry in self:
-            for tag in entry.fields:
+        for rec in self.records:
+            for tag in rec.fields:
                 if tag not in self.userfields:
                     self.userfields.append(tag)
 
@@ -60,9 +172,9 @@ class BBDB(list):
         fp.write(";;; file-version: %d\n" % self.fileversion)
         fp.write(";;; user-fields: (%s)\n" % " ".join(self.userfields))
 
-        for entry in self:
+        for rec in self.records:
             fp.write("[")
-            fp.write(" ".join(list(entry.records())))
+            fp.write(" ".join(list(rec.outputs())))
             fp.write("]\n")
 
     def write_file(self, path):
@@ -70,51 +182,26 @@ class BBDB(list):
             self.write(fp)
 
     def __repr__(self):
-        return "<BBDB: %d entries>" % len(self)
+        return "<BBDB: %d records>" % len(self.records)
 
 
-class BBDBItem(OrderedDict):
-    def __init__(self):
-        super(BBDBItem, self).__init__()
-
-
-class BBDBEntry(BBDBItem):
+class Record(odict):
     """
-    A single BBDB entry.
+    A single BBDB record.
     """
 
     def __init__(self, firstname="", lastname="", aka=[], company="",
-                 phone=[], address=[], net=[], fields=[], cache=None):
-        super(BBDBEntry, self).__init__()
+                 phone={}, address={}, net=[], fields={}, cache=None):
+        super(Record, self).__init__()
 
-        self.set_name(firstname, lastname)
-        self.set_company(company)
-
-        self["aka"] = []
-        if aka:
-            for name in aka:
-                self.add_aka(name)
-
-        self["phone"] = BBDBItem()
-        if phone:
-            for tag, number in phone:
-                self.add_phone(tag, number)
-
-        self["address"] = BBDBItem()
-        if address:
-            for args in address:
-                self.add_address(*args)
-
-        self["net"] = []
-        if net:
-            for name in net:
-                self.add_net(name)
-
-        self["fields"] = BBDBItem()
-        if fields:
-            for tag, text in fields:
-                self.add_field(tag, text)
-
+        self["firstname"] = firstname
+        self["lastname"] = lastname
+        self["company"] = company
+        self["aka"] = aka
+        self["phone"] = odict(phone)
+        self["address"] = odict(address)
+        self["net"] = net
+        self["fields"] = odict(fields)
         self["cache"] = cache
 
     def set_name(self, firstname, lastname):
@@ -138,7 +225,7 @@ class BBDBEntry(BBDBItem):
 
     def add_address(self, tag, lines=[], city="", state="",
                     zipcode="", country=""):
-        address = BBDBAddress(lines, city, state, zipcode, country)
+        address = Address(lines, city, state, zipcode, country)
         self["address"][tag] = address
         return address
 
@@ -184,7 +271,7 @@ class BBDBEntry(BBDBItem):
     def fields(self):
         return self["fields"]
 
-    def records(self):
+    def outputs(self):
         yield quote(self.firstname)
         yield quote(self.lastname)
 
@@ -209,7 +296,7 @@ class BBDBEntry(BBDBItem):
         if self.address:
             rec = []
             for tag, address in self.address.items():
-                addr = " ".join(list(address.records()))
+                addr = " ".join(list(address.outputs()))
                 rec.append("[" + quote(tag) + " " + addr + "]")
             yield "(" + " ".join(rec) + ")"
         else:
@@ -231,12 +318,12 @@ class BBDBEntry(BBDBItem):
         yield "nil"
 
     def __repr__(self):
-        return "<BBDBEntry: %s>" % self.name
+        return "<Record: %s>" % self.name
 
 
-class BBDBAddress(BBDBItem):
+class Address(odict):
     def __init__(self, lines=[], city="", state="", zipcode="", country=""):
-        super(BBDBAddress, self).__init__()
+        super(Address, self).__init__()
 
         self["lines"] = list(lines)
 
@@ -280,7 +367,7 @@ class BBDBAddress(BBDBItem):
     def country(self):
         return self["country"]
 
-    def records(self):
+    def outputs(self):
         if self.lines:
             yield "(" + " ".join(map(quote, self.lines)) + ")"
         else:
@@ -291,63 +378,29 @@ class BBDBAddress(BBDBItem):
         yield quote(self.zipcode)
         yield quote(self.country)
 
+    def __str__(self):
+        lines = self.lines[:]
+
+        if self.city:
+            lines.append(self.city)
+
+        if self.state:
+            lines.append(self.state)
+
+        if self.zipcode:
+            lines.append(self.zipcode)
+
+        if self.country:
+            lines.append(self.country)
+
+        return ", ".join(lines)
+
     def __repr__(self):
-        return "<BBDBAddress: %s>" % " ".join(list(self.records()))
+        return "<Address: %s>" % str(self)
 
 
-def make_grammar():
-    """
-    Construct the BBDB grammar.  See bbdb.ebnf for the specification.
-    """
-
-    # Define the low-level entities.
-    string = QuotedString(quoteChar='"', escChar='\\')
-    string.setParseAction(lambda tokens: tokens[0])
-
-    nil = Keyword("nil")
-    nil.setParseAction(lambda tokens: [None])
-
-    atom = Word(alphanums + '-')
-    dot = Suppress(Keyword("."))
-
-    integer = Word(nums)
-    integer.setParseAction(lambda tokens: int(tokens[0]))
-
-    # Define helper functions for the brace types.
-    LP, RP, LB, RB = map(Suppress, "()[]")
-    Paren = lambda arg: LP + Group(arg) + RP
-    Bracket = lambda arg: LB + Group(arg) + RB
-
-    # Phone.
-    phone_usa = Group(OneOrMore(integer))
-    phone_nonusa = string
-    phone = Bracket(string + Or([phone_usa, phone_nonusa]))
-
-    # Address.
-    address_lines = Paren(OneOrMore(string))
-    address = Bracket(string + address_lines + string * 4)
-
-    # Field.
-    field = Paren(atom + dot + string)
-
-    # A single entry.
-    bbdb_entry = Bracket(string("firstname") + string("lastname") +
-                         Or([Paren(OneOrMore(string)), nil])("aka") +
-                         Or([string, nil])("company") +
-                         Or([Paren(OneOrMore(phone)), nil])("phone") +
-                         Or([Paren(OneOrMore(address)), nil])("address") +
-                         Or([Paren(OneOrMore(string)), nil])("net") +
-                         Or([Paren(OneOrMore(field)), nil])("fields") +
-                         nil("cache"))
-
-    # All the entries.
-    bbdb = ZeroOrMore(bbdb_entry)
-
-    # Define comment syntax.
-    comment = Regex(r";.*")
-    bbdb.ignore(comment)
-
-    return bbdb
+def parse(text):
+    return grammar.parseString(text, parseAll=True)
 
 
 def quote(string):

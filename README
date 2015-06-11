@@ -2,12 +2,14 @@
  PyBBDB -- an interface to the Insidious Big Brother Database
 ==============================================================
 
+.. contents::
+
 Introduction
 ============
 
-PyBBDB sounds like a rude noise, but it is actually a Python interface to
-the Insidious Big Brother Database (BBDB_), an address book used with `GNU
-Emacs`_.  You can find out more about BBDB on the `Emacs Wiki`_.
+PyBBDB may sound like a rude noise, but it is actually a Python interface
+to the Insidious Big Brother Database (BBDB_), an address book used with
+`GNU Emacs`_.  You can find out more about BBDB on the `Emacs Wiki`_.
 
 .. note::
 
@@ -17,22 +19,11 @@ Emacs`_.  You can find out more about BBDB on the `Emacs Wiki`_.
 Installation
 ============
 
-To build it:
-
-    python setup.py build
-
-To install it:
+It's the usual incantation::
 
     python setup.py install
 
-Type
-
-    python setup.py --help
-
-for other things you can do.
-
-There's a ``Makefile``, so if you have the right setup you can just type
-``make`` and ``make install`` in the usual manner.
+You'll need to install the pyparsing_ module too.
 
 Usage
 =====
@@ -45,23 +36,23 @@ To create a new, empty database::
     >>> from bbdb import BBDB
     >>> db = BBDB()
     >>> db
-    <BBDB: 0 entries>
+    <BBDB: 0 records>
 
-Creating new entries
+Creating new records
 --------------------
 
-To add an entry, use the ``add()`` method, giving the first and last
-names::
+To add a new record, use the ``add_record()`` method, giving the first and
+last names::
 
-    >>> fred = db.add("Fred", "Flintstone")
+    >>> fred = db.add_record("Fred", "Flintstone")
     >>> fred
-    <BBDBEntry: Fred Flintstone>
+    <Record: Fred Flintstone>
 
 You can use the returned entry to set other BBDB attributes::
 
     >>> fred.set_company("Slate Rock & Gravel")
 
-A ``BBDBEntry`` is a subclass of ``OrderedDict``, so you can set or modify
+A ``Record`` is a subclass of ``OrderedDict``, so you can set or modify
 attributes in this style::
 
     >>> fred["company"] = "Slate Rock & Gravel"
@@ -91,14 +82,14 @@ methods for these::
     >>> fred.aka
     ['Freddie']
 
-Telephone entries consist of a location tag and a phone number string::
+Telephone records consist of a location tag and a phone number string::
 
     >>> fred.add_phone("Home", "555-1234")
     >>> fred.add_phone("Work", "555-6789")
     >>> fred.phone
-    BBDBItem([('Home', '555-1234'), ('Work', '555-6789')])
+    OrderedDict([('Home', '555-1234'), ('Work', '555-6789')])
 
-Entries can have multiple addresses, each indexed by a location tag.  Each
+Records can have multiple addresses, each indexed by a location tag.  Each
 address in turn has several attributes::
 
     >>> home = fred.add_address("Home")
@@ -107,6 +98,9 @@ address in turn has several attributes::
     >>> home.set_state("Hanna Barbera")
     >>> home.set_zipcode("12345")
     >>> home.set_country("USA")
+
+    >>> home
+    <Address: Cave 2a, 345 Cavestone Road, Bedrock, Hanna Barbera, 12345, USA>
 
     >>> home.lines
     ['Cave 2a', '345 Cavestone Road']
@@ -121,7 +115,7 @@ fields::
     >>> fred.add_field("kids", "Pebbles, Bam-Bam")
     >>> fred.add_field("catchphrase", '"Yabba dabba doo!"')
     >>> fred.fields
-    BBDBItem([('spouse', 'Wilma'), ('kids', 'Pebbles, Bam-Bam'), ('catchphrase', '"Yabba dabba doo!"')])
+    OrderedDict([('spouse', 'Wilma'), ('kids', 'Pebbles, Bam-Bam'), ('catchphrase', '"Yabba dabba doo!"')])
 
 Reading and writing BBDB files
 ------------------------------
@@ -129,7 +123,7 @@ Reading and writing BBDB files
 The ``write()`` method will write the database to a stream (default
 ``stdout``)::
 
-    >>> db.write()     # doctest: +ELLIPSIS
+    >>> db.write()                        # doctest: +ELLIPSIS
     ;; -*-coding: utf-8-emacs;-*-
     ;;; file-version: 6
     ;;; user-fields: (spouse kids catchphrase)
@@ -143,7 +137,7 @@ You can read a file by passing it in when you create the BBDB object::
 
     >>> newdb = BBDB("bbdb.el")
     >>> newdb
-    <BBDB: 1 entries>
+    <BBDB: 1 records>
 
     >>> newdb == db
     True
@@ -160,42 +154,51 @@ serialize it to other formats.  For example, JSON::
     >>> import sys
     >>> import json
     >>> json.dump(db, sys.stdout, indent=4)
-    [
-        {
-            "firstname": "Fred", 
-            "lastname": "Flintstone", 
-            "company": "Slate Rock & Gravel", 
-            "aka": [
-                "Freddie"
-            ], 
-            "phone": {
-                "Home": "555-1234", 
-                "Work": "555-6789"
-            }, 
-            "address": {
-                "Home": {
-                    "lines": [
-                        "Cave 2a", 
-                        "345 Cavestone Road"
-                    ], 
-                    "city": "Bedrock", 
-                    "state": "Hanna Barbera", 
-                    "zipcode": "12345", 
-                    "country": "USA"
-                }
-            }, 
-            "net": [
-                "fred@bedrock.org", 
-                "fred.flintstone@gravel.com"
-            ], 
-            "fields": {
-                "spouse": "Wilma", 
-                "kids": "Pebbles, Bam-Bam", 
-                "catchphrase": "\"Yabba dabba doo!\""
-            }, 
-            "cache": null
-        }
-    ]
+    {
+        "coding": "utf-8-emacs", 
+        "fileversion": 6, 
+        "userfields": [
+            "spouse", 
+            "kids", 
+            "catchphrase"
+        ], 
+        "records": [
+            {
+                "firstname": "Fred", 
+                "lastname": "Flintstone", 
+                "company": "Slate Rock & Gravel", 
+                "aka": [
+                    "Freddie"
+                ], 
+                "phone": {
+                    "Home": "555-1234", 
+                    "Work": "555-6789"
+                }, 
+                "address": {
+                    "Home": {
+                        "lines": [
+                            "Cave 2a", 
+                            "345 Cavestone Road"
+                        ], 
+                        "city": "Bedrock", 
+                        "state": "Hanna Barbera", 
+                        "zipcode": "12345", 
+                        "country": "USA"
+                    }
+                }, 
+                "net": [
+                    "fred@bedrock.org", 
+                    "fred.flintstone@gravel.com"
+                ], 
+                "fields": {
+                    "spouse": "Wilma", 
+                    "kids": "Pebbles, Bam-Bam", 
+                    "catchphrase": "\"Yabba dabba doo!\""
+                }, 
+                "cache": null
+            }
+        ]
+    }
 
 Release history
 ===============
@@ -205,12 +208,14 @@ Version 0.1 (unreleased)
 
 * Initial release.
 
-Problems, bugs, etc
-===================
+Feedback
+========
 
-Complain to me (Glenn Hutchings) at zondo42@gmail.com.
+Report any problems, bugs, etc, to me (Glenn Hutchings) at
+zondo42@gmail.com.  Patches will also be welcome!
 
 .. _BBDB: http://bbdb.sourceforge.net
 .. _Emacs Wiki: http://www.emacswiki.org/emacs/CategoryBbdb
 .. _GNU Emacs: https://www.gnu.org/software/emacs
 .. _Savannah: https://savannah.nongnu.org/projects/bbdb
+.. _pyparsing: https://pypi.python.org/pypi/pyparsing
