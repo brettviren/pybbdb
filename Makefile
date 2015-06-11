@@ -3,7 +3,7 @@
 PYTHON = python$(VER)
 SETUP  = $(PYTHON) setup.py
 
-CLEANFILES = build dist *.egg* *.zip *.el
+CLEANFILES = build dist *.egg* *.zip *.el __pycache__
 
 .DEFAULT:;	@ $(SETUP) $@
 .PHONY:		build

@@ -1,6 +1,6 @@
-==============================================================
- PyBBDB -- an interface to the Insidious Big Brother Database
-==============================================================
+==============
+ About PyBBDB
+==============
 
 .. contents::
 
@@ -16,10 +16,12 @@ to the Insidious Big Brother Database (BBDB_), an address book used with
    This module only handles BBDB version 2.  There is a version 3 in
    development on Savannah_, but there has been no public release as yet.
 
+You can find the source repo on Bitbucket_.
+
 Installation
 ============
 
-It's the usual incantation::
+The usual incantation will install things::
 
     python setup.py install
 
@@ -31,24 +33,24 @@ Usage
 Creating a BBDB database
 ------------------------
 
-To create a new, empty database::
+To create a new database is as simple as you might expect::
 
     >>> from bbdb import BBDB
     >>> db = BBDB()
-    >>> db
-    <BBDB: 0 records>
 
-Creating new records
---------------------
-
-To add a new record, use the ``add_record()`` method, specifying the
+The database starts with no records.  To add a new one, use the
+``add_record()`` method, specifying the first and last names, and any other
 attributes you want to set::
 
-    >>> fred = db.add_record(firstname="Fred", lastname="Flintstone")
+    >>> fred = db.add_record("Fred", "Flintstone")
     >>> fred
     <Record: Fred Flintstone>
 
-You can use the returned entry to set other BBDB attributes::
+    >>> barney = db.add_record("Barney", "Rubble")
+    >>> db
+    <BBDB: 2 records>
+
+You can use the returned record object to set other attributes::
 
     >>> fred.set_company("Slate Rock & Gravel")
 
@@ -70,7 +72,7 @@ There's also a composite ``name`` property::
     >>> fred.name
     'Fred Flintstone'
 
-Some BBDB attributes consist of lists of things, and there are ``add()``
+Some BBDB attributes consist of lists of things, and there are ``add_*()``
 methods for these::
 
     >>> fred.add_net("fred@bedrock.org")
@@ -84,16 +86,16 @@ methods for these::
 
 Telephone records consist of a location tag and a phone number string::
 
-    >>> fred.add_phone("Home", "555-1234")
     >>> fred.add_phone("Work", "555-6789")
+    >>> fred.add_phone("Home", "555-1234")
     >>> fred.phone
-    OrderedDict([('Home', '555-1234'), ('Work', '555-6789')])
+    Dict([('Home', '555-1234'), ('Work', '555-6789')])
 
 Records can have multiple addresses, each indexed by a location tag.  Each
 address in turn has several attributes::
 
     >>> home = fred.add_address("Home")
-    >>> home.add_line("Cave 2a", "345 Cavestone Road")
+    >>> home.add_location("Cave 2a", "345 Cavestone Road")
     >>> home.set_city("Bedrock")
     >>> home.set_state("Hanna Barbera")
     >>> home.set_zipcode("12345")
@@ -102,7 +104,7 @@ address in turn has several attributes::
     >>> home
     <Address: Cave 2a, 345 Cavestone Road, Bedrock, Hanna Barbera, 12345, USA>
 
-    >>> home.lines
+    >>> home.location
     ['Cave 2a', '345 Cavestone Road']
 
     >>> home.zipcode
@@ -115,54 +117,60 @@ fields::
     >>> fred.add_field("kids", "Pebbles, Bam-Bam")
     >>> fred.add_field("catchphrase", '"Yabba dabba doo!"')
     >>> fred.fields
-    OrderedDict([('spouse', 'Wilma'), ('kids', 'Pebbles, Bam-Bam'), ('catchphrase', '"Yabba dabba doo!"')])
+    Dict([('catchphrase', '"Yabba dabba doo!"'), ('kids', 'Pebbles, Bam-Bam'), ('spouse', 'Wilma')])
 
 Reading and writing BBDB files
 ------------------------------
 
 The ``write()`` method will write the database to a stream (default
-``stdout``)::
+``stdout``) in a format suitable for use by GNU Emacs::
 
     >>> db.write()                        # doctest: +ELLIPSIS
     ;; -*-coding: utf-8-emacs;-*-
     ;;; file-version: 6
-    ;;; user-fields: (spouse kids catchphrase)
+    ;;; user-fields: (catchphrase kids spouse)
+    ["Barney" "Rubble" nil nil nil nil nil nil nil]
     ["Fred" "Flintstone" ("Freddie") "Slate Rock & Gravel" (["Home" "555-1234"] ...
 
 The convenience ``write_file()`` method will put that in a file::
 
     >>> db.write_file("bbdb.el")
 
-You can read a file by passing it in when you create the BBDB object::
+You can read a database from file using the ``fromfile()`` static method::
 
-    >>> newdb = BBDB("bbdb.el")
+    >>> newdb = BBDB.fromfile("bbdb.el")
     >>> newdb
-    <BBDB: 1 records>
+    <BBDB: 2 records>
 
     >>> newdb == db
     True
 
-The ``read_file()`` method of BBDB objects can be used to concatenate
-databases.
+The ``read()`` and ``read_file()`` methods of a BBDB database can be used
+import records from other databases.
 
 Exporting to other formats
 --------------------------
 
-Since a BBDB object is a subclass of ``OrderedDict``, you can easily
+Since all BBDB objects are subclasses of ``OrderedDict``, you can easily
 serialize it to other formats.  For example, JSON::
 
     >>> import sys
     >>> import json
-    >>> json.dump(db, sys.stdout, indent=4)
+    >>> json.dump(db, sys.stdout, indent=4)  # doctest: +NORMALIZE_WHITESPACE +REPORT_UDIFF
     {
         "coding": "utf-8-emacs", 
         "fileversion": 6, 
-        "userfields": [
-            "spouse", 
-            "kids", 
-            "catchphrase"
-        ], 
         "records": [
+            {
+                "firstname": "Barney", 
+                "lastname": "Rubble", 
+                "company": "", 
+                "aka": [], 
+                "phone": {}, 
+                "address": {}, 
+                "net": [], 
+                "fields": {}
+            }, 
             {
                 "firstname": "Fred", 
                 "lastname": "Flintstone", 
@@ -176,7 +184,7 @@ serialize it to other formats.  For example, JSON::
                 }, 
                 "address": {
                     "Home": {
-                        "lines": [
+                        "location": [
                             "Cave 2a", 
                             "345 Cavestone Road"
                         ], 
@@ -191,22 +199,22 @@ serialize it to other formats.  For example, JSON::
                     "fred.flintstone@gravel.com"
                 ], 
                 "fields": {
-                    "spouse": "Wilma", 
+                    "catchphrase": "\"Yabba dabba doo!\"", 
                     "kids": "Pebbles, Bam-Bam", 
-                    "catchphrase": "\"Yabba dabba doo!\""
-                }, 
-                "cache": null
+                    "spouse": "Wilma"
+                }
             }
         ]
     }
 
-Here's a vague sketch of how to recreate a database from a dict::
+You can create a BBDB database from an appropriately-structured dict using
+the ``fromdict`` method::
 
-    >>> text = json.dumps(db, indent=4)
-    >>> data = json.loads(text)
-    >>> newdb = BBDB(**data)
-    >>> json.dump(newdb, sys.stdout, indent=4)
+    >>> serialized = json.dumps(db)
+    >>> data = json.loads(serialized)
+    >>> newdb = BBDB.fromdict(data)
     >>> newdb == db
+    True
 
 Release history
 ===============
@@ -222,6 +230,7 @@ Feedback
 Report any problems, bugs, etc, to me (Glenn Hutchings) at
 zondo42@gmail.com.  Patches will also be welcome!
 
+.. _Bitbucket: https://bitbucket.org/zondo/pybbdb
 .. _BBDB: http://bbdb.sourceforge.net
 .. _Emacs Wiki: http://www.emacswiki.org/emacs/CategoryBbdb
 .. _GNU Emacs: https://www.gnu.org/software/emacs
