@@ -3,6 +3,8 @@ syntax: glob
 build/
 dist/
 
+version.py
+
 *.el
 *.egg*
 *.pyc

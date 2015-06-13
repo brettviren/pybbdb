@@ -1,2 +1,0 @@
-include COPYING Makefile MANIFEST.in
-include bbdb.ebnf

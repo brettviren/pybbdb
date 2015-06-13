@@ -22,6 +22,7 @@ address         = "(" {address_entry}+ ")" | "nil" .
 address_entry   = "[" address_tag address_lines city state zipcode country "]" .
 address_tag     = string .
 address_lines   = "(" {string}+ ")" .
+
 city            = string .
 state           = string .
 zipcode         = string .

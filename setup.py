@@ -3,32 +3,33 @@
 import os
 from setuptools import setup
 
+# Bootstrap setuptools.
+from conf.ez_setup import use_setuptools
+use_setuptools()
+
+# Do the setup.
+from conf.tools import read_pkginfo
+info = read_pkginfo("bbdb")
+
 thisdir = os.path.dirname(__file__)
 readme = os.path.join(thisdir, "README")
 
-setup(name             = "pybbdb",
-      version          = "0.1",
+setup(name             = info.__title__,
+      version          = info.__version__,
 
-      author           = "Glenn Hutchings",
-      author_email     = "zondo42@gmail.com",
+      author           = info.__author__,
+      author_email     = info.__email__,
 
-      description      = "Pythonic interface to BBDB.",
+      description      = info.__desc__,
       long_description = "\n" + open(readme).read(),
 
-      url              = "http://pypi.python.org/pypi/pybbdb",
-      license          = "GPL",
+      url              = info.__url__,
 
-      py_modules       = ["bbdb"],
-      install_requires = ["pyparsing"],
+      classifiers      = info.__classifiers__,
+      license          = info.__license__,
 
-      classifiers      = [
-          "Development Status :: 4 - Beta",
-          "Intended Audience :: Developers",
-          "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
-          "Programming Language :: Python :: 2.7",
-          "Topic :: Communications :: Email :: Address Book",
-          "Topic :: Database",
-          "Topic :: Software Development :: Libraries :: Python Modules",
-      ])
+      packages         = ["bbdb"],
+      setup_requires   = ["hgtools"],
+      install_requires = ["pyparsing"])
 
 # flake8: noqa
