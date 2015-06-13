@@ -18,14 +18,21 @@ PyBBDB source repo is hosted at Bitbucket_.
    This module only handles BBDB version 2.  There is a version 3 in
    development on Savannah_, but there has been no public release as yet.
 
+Requirements
+============
+
+To install and run it:
+    pyparsing_
+
+To build source distributions from the checked-out Mercurial_ repo:
+    hgtools_
+
 Installation
 ============
 
 The usual incantation will install things::
 
     python setup.py install
-
-You'll need to install the pyparsing_ module too.
 
 Usage
 =====
@@ -89,7 +96,7 @@ Telephone records consist of a location tag and a phone number string::
     >>> fred.add_phone("Work", "555-6789")
     >>> fred.add_phone("Home", "555-1234")
     >>> fred.phone
-    Dict([('Home', '555-1234'), ('Work', '555-6789')])
+    SortedDict([('Home', '555-1234'), ('Work', '555-6789')])
 
 Records can have multiple addresses, each indexed by a location tag.  Each
 address in turn has several attributes::
@@ -117,7 +124,7 @@ fields::
     >>> fred.add_field("kids", "Pebbles, Bam-Bam")
     >>> fred.add_field("catchphrase", '"Yabba dabba doo!"')
     >>> fred.fields
-    Dict([('catchphrase', '"Yabba dabba doo!"'), ('kids', 'Pebbles, Bam-Bam'), ('spouse', 'Wilma')])
+    SortedDict([('catchphrase', '"Yabba dabba doo!"'), ('kids', 'Pebbles, Bam-Bam'), ('spouse', 'Wilma')])
 
 Reading and writing BBDB files
 ------------------------------
@@ -233,6 +240,8 @@ zondo42@gmail.com.  Patches will also be welcome!
 .. _Bitbucket: https://bitbucket.org/zondo/pybbdb
 .. _BBDB: http://bbdb.sourceforge.net
 .. _Emacs Wiki: http://www.emacswiki.org/emacs/CategoryBbdb
+.. _Mercurial: http://mercurial.selenic.com
 .. _GNU Emacs: https://www.gnu.org/software/emacs
 .. _Savannah: https://savannah.nongnu.org/projects/bbdb
+.. _hgtools: https://pypi.python.org/pypi/hgtools
 .. _pyparsing: https://pypi.python.org/pypi/pyparsing

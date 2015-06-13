@@ -1,142 +1,17 @@
 """
-Interface to BBDB, the Insidious Big Brother Database.
+The BBDB database.
 """
 
-import re
 import sys
 
-from collections import OrderedDict
-from functools import total_ordering
-
-from pyparsing import (Regex, QuotedString, Keyword, Suppress, Word,
-                       Group, OneOrMore, ZeroOrMore, Or, nums, alphanums)
+from . import parser
+from .utils import SortedDict, quote
 
 
-def make_grammar():
-    """
-    Construct the BBDB grammar.  See bbdb.ebnf for the specification.
-    """
-
-    # Define the low-level entities.
-    string = QuotedString(quoteChar='"', escChar='\\')
-    string.setParseAction(lambda t: t[0])
-
-    nil = Keyword("nil")
-    nil.setParseAction(lambda t: [None])
-
-    atom = Word(alphanums + '-')
-    dot = Suppress(Keyword("."))
-
-    integer = Word(nums)
-    integer.setParseAction(lambda t: int(t[0]))
-
-    # Helper functions for the brace types.
-    LP, RP, LB, RB = map(Suppress, "()[]")
-    Paren = lambda arg: LP + Group(arg) + RP
-    Bracket = lambda arg: LB + Group(arg) + RB
-
-    # Helper functions for building return values.
-    def make_dict(t):
-        d = Dict()
-        if t[0]:
-            for k, v in t[0]:
-                d[k] = v
-        return d
-
-    def make_address_entry(t):
-        return t[0].tag, Address(location=t[0].location or [],
-                                 city=t[0].city or "",
-                                 state=t[0].state or "",
-                                 zipcode=t[0].zipcode or "",
-                                 country=t[0].country or "")
-
-    def make_record(t):
-        return Record(firstname=t[0].firstname,
-                      lastname=t[0].lastname,
-                      aka=t[0].aka or [],
-                      company=t[0].company or "",
-                      phone=t[0].phone or {},
-                      address=t[0].address or {},
-                      net=t[0].net or [],
-                      fields=t[0].fields or {})
-
-    # Phone.
-    phone_usa = Group(OneOrMore(integer))
-    phone_nonusa = string
-    phone_entry = Bracket(string("tag") + Or([phone_usa, phone_nonusa]))
-    phone = Or([Paren(OneOrMore(phone_entry)), nil])("phone")
-    phone.setParseAction(make_dict)
-
-    # Address.
-    location = Paren(OneOrMore(string))("location")
-    location.setParseAction(lambda t: t.asList())
-
-    address_entry = Bracket(string("tag") + location + string("city") +
-                            string("state") + string("zipcode") +
-                            string("country"))
-    address_entry.setParseAction(make_address_entry)
-    address = Or([Paren(OneOrMore(address_entry)), nil])("address")
-    address.setParseAction(make_dict)
-
-    # Field.
-    field = Paren(atom + dot + string)
-    fields = Or([Paren(OneOrMore(field)), nil])("fields")
-    fields.setParseAction(make_dict)
-
-    # Other parts of an entry.
-    name = string("firstname") + string("lastname")
-    company = Or([string, nil])("company")
-
-    aka = Or([Paren(OneOrMore(string)), nil])("aka")
-    aka.setParseAction(lambda t: t.asList())
-
-    net = Or([Paren(OneOrMore(string)), nil])("net")
-    net.setParseAction(lambda t: t.asList())
-
-    cache = nil("cache")
-
-    # A single record.
-    record = Bracket(name + aka + company + phone + address + net +
-                     fields + cache)
-
-    record.setParseAction(make_record)
-
-    # All the records.
-    bbdb = ZeroOrMore(record)
-    bbdb.setParseAction(lambda t: t.asList())
-
-    # Define comment syntax.
-    comment = Regex(r";.*")
-    bbdb.ignore(comment)
-
-    return bbdb
-
-
-@total_ordering
-class Dict(OrderedDict):
-    """
-    Base dictionary type.
-    """
-
-    def __init__(self, *args, **kw):
-        super(Dict, self).__init__(*args, **kw)
-
-    def __lt__(self, other):
-        return list(self.items()) < list(other.items())
-
-    def sort(self):
-        items = sorted(self.items())
-        self.clear()
-        self.update(items)
-
-
-class BBDB(Dict):
+class BBDB(SortedDict):
     """
     A BBDB database.
     """
-
-    _props = (("coding", r"coding: (.+);", lambda s: s),
-             ("fileversion", r"file-version: (\d+)", lambda s: int(s)))
 
     def __init__(self, **kw):
         super(BBDB, self).__init__()
@@ -177,16 +52,13 @@ class BBDB(Dict):
 
     def read(self, fp=sys.stdin):
         text = fp.read()
+        data = parser.parse(text)
 
-        for line in text.split("\n"):
-            if line.startswith(";"):
-                for attr, regexp, func in self._props:
-                    m = re.search(regexp, line)
-                    if m:
-                        self[attr] = func(m.group(1))
-
-        records = parse(text)
-        self.records.extend(records)
+        for attr, value in data.items():
+            if attr == "records":
+                self.records.extend(value)
+            else:
+                self[attr] = value
 
     def write_file(self, path):
         with open(path, "w") as fp:
@@ -232,7 +104,7 @@ class BBDB(Dict):
         return "<BBDB: %d records>" % len(self.records)
 
 
-class Record(Dict):
+class Record(SortedDict):
     """
     A single BBDB record.
     """
@@ -248,10 +120,10 @@ class Record(Dict):
         self["lastname"] = kw.get("lastname", "")
         self["company"] = kw.get("company", "")
         self["aka"] = kw.get("aka", [])
-        self["phone"] = Dict(phone)
-        self["address"] = Dict()
+        self["phone"] = SortedDict(phone)
+        self["address"] = SortedDict()
         self["net"] = kw.get("net", [])
-        self["fields"] = Dict(fields)
+        self["fields"] = SortedDict(fields)
 
         for tag, data in address:
             self["address"][tag] = Address(**data)
@@ -379,7 +251,7 @@ class Record(Dict):
         return "<Record: %s>" % self.name
 
 
-class Address(Dict):
+class Address(SortedDict):
     def __init__(self, **kw):
         super(Address, self).__init__()
 
@@ -447,14 +319,3 @@ class Address(Dict):
 
     def __repr__(self):
         return "<Address: %s>" % self.description
-
-
-def parse(text):
-    return grammar.parseString(text, parseAll=True)
-
-
-def quote(string):
-    return '"' + string.replace('"', r'\"') + '"'
-
-
-grammar = make_grammar()
