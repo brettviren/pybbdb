@@ -56,7 +56,8 @@ class BBDB(SortedDict):
 
         for attr, value in data.items():
             if attr == "records":
-                self.records.extend(value)
+                records = [Record(**rec) for rec in value]
+                self.records.extend(records)
             else:
                 self[attr] = value
 
