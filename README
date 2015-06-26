@@ -141,11 +141,11 @@ The ``write()`` method will write the database to a stream (default
 
 The convenience ``write_file()`` method will put that in a file::
 
-    >>> db.write_file("bbdb.el")
+    >>> db.write_file("examples/bbdb.el")
 
 You can read a database from file using the ``fromfile()`` static method::
 
-    >>> newdb = BBDB.fromfile("bbdb.el")
+    >>> newdb = BBDB.fromfile("examples/bbdb.el")
     >>> newdb
     <BBDB: 2 records>
 

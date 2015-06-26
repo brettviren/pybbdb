@@ -17,8 +17,6 @@ from geopy.geocoders import Nominatim
 
 from collections import OrderedDict
 
-from bbdb import BBDB
-
 _ignoredprops = ["creation-date", "timestamp"]
 
 
@@ -71,9 +69,8 @@ def rec2feature(rec, address, lat, lon):
 
 
 if __name__ == "__main__":
-    from bbdb.utils import bbdb_file
+    from tools import readdb
 
-    path = bbdb_file()
-    db = BBDB.fromfile(path)
+    db = readdb()
     geo = bbdb2geo(db)
     geojson.dump(geo, sys.stdout, indent=4)
