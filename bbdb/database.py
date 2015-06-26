@@ -5,7 +5,7 @@ The BBDB database.
 import sys
 
 from . import parser
-from .utils import SortedDict, quote
+from .utils import SortedDict, bbdb_file, quote
 
 
 class BBDB(SortedDict):
@@ -320,3 +320,15 @@ class Address(SortedDict):
 
     def __repr__(self):
         return "<Address: %s>" % self.description
+
+
+def readdb(path=None, default="bbdb.el"):
+    "Read a BBDB database."
+
+    if not path:
+        if len(sys.argv) > 1:
+            path = sys.argv[1]
+        else:
+            path = bbdb_file() or default
+
+    return BBDB.fromfile(path)
