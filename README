@@ -22,7 +22,7 @@ Requirements
 ============
 
 To install and run it:
-    pyparsing_
+    pyparsing_, voluptuous_ and six_
 
 To build source distributions from the checked-out Mercurial_ repo:
     hgtools_
@@ -245,3 +245,5 @@ zondo42@gmail.com.  Patches will also be welcome!
 .. _Savannah: https://savannah.nongnu.org/projects/bbdb
 .. _hgtools: https://pypi.python.org/pypi/hgtools
 .. _pyparsing: https://pypi.python.org/pypi/pyparsing
+.. _six: https://pypi.python.org/pypi/six
+.. _voluptuous: https://pypi.python.org/pypi/voluptuous
