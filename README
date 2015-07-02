@@ -10,8 +10,8 @@ Introduction
 PyBBDB may sound like a rude noise, but it is actually a Python interface
 to the Insidious Big Brother Database (BBDB_), an address book used with
 `GNU Emacs`_.  You can find out more about BBDB on the `Emacs Wiki`_.  The
-PyBBDB source repo is hosted at Bitbucket_.
-
+PyBBDB source repo is hosted at Bitbucket_.  Releases can be found on
+PyPI_.
 
 .. note::
 
@@ -229,6 +229,16 @@ the ``fromdict`` method::
 Release history
 ===============
 
+Version 0.2 (2 July 2015)
+-------------------------
+
+* Add validation of data using voluptuous_.
+* Add a bunch of demo converter programs.
+* Add tox_ test support.
+* Add Python 3 support.
+
+* Bugfix: convert records from file to correct type.
+
 Version 0.1 (11 June 2015)
 --------------------------
 
@@ -242,6 +252,7 @@ zondo42@gmail.com.  Patches will also be welcome!
 
 .. _Bitbucket: https://bitbucket.org/zondo/pybbdb
 .. _BBDB: http://bbdb.sourceforge.net
+.. _PyPI: https://pypi.python.org/pypi/pybbdb
 .. _Emacs Wiki: http://www.emacswiki.org/emacs/CategoryBbdb
 .. _Mercurial: http://mercurial.selenic.com
 .. _GNU Emacs: https://www.gnu.org/software/emacs
@@ -250,4 +261,5 @@ zondo42@gmail.com.  Patches will also be welcome!
 .. _pyparsing: https://pypi.python.org/pypi/pyparsing
 .. _pytest: https://pypi.python.org/pypi/pytest
 .. _six: https://pypi.python.org/pypi/six
+.. _tox: https://pypi.python.org/pypi/tox
 .. _voluptuous: https://pypi.python.org/pypi/voluptuous
