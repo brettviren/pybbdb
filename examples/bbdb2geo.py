@@ -69,7 +69,7 @@ def rec2feature(rec, address, lat, lon):
 
 
 if __name__ == "__main__":
-    from tools import readdb
+    from bbdb.database import readdb
 
     db = readdb()
     geo = bbdb2geo(db)
