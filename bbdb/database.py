@@ -5,6 +5,7 @@ The BBDB database.
 import sys
 
 from . import parser
+from .schema import validate
 from .utils import SortedDict, bbdb_file, quote
 
 
@@ -44,6 +45,7 @@ class BBDB(SortedDict):
 
     @staticmethod
     def fromdict(d):
+        d = validate(d)
         return BBDB(**d)
 
     def read_file(self, path):

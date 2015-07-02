@@ -30,6 +30,6 @@ setup(name             = info.__title__,
 
       packages         = ["bbdb"],
       setup_requires   = ["hgtools"],
-      install_requires = ["pyparsing"])
+      install_requires = ["pyparsing", "voluptuous", "six"])
 
 # flake8: noqa

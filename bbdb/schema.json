@@ -1,0 +1,49 @@
+{
+    "coding": "utf-8-emacs", 
+    "fileversion": 6, 
+    "records": [
+	{
+	    "firstname": "Barney", 
+	    "lastname": "Rubble", 
+	    "company": "", 
+	    "aka": [], 
+	    "phone": {}, 
+	    "address": {}, 
+	    "net": [], 
+	    "fields": {}
+	}, 
+	{
+	    "firstname": "Fred", 
+	    "lastname": "Flintstone", 
+	    "company": "Slate Rock & Gravel", 
+	    "aka": [
+		"Freddie"
+	    ], 
+	    "phone": {
+		"Home": "555-1234", 
+		"Work": "555-6789"
+	    }, 
+	    "address": {
+		"Home": {
+		    "location": [
+			"Cave 2a", 
+			"345 Cavestone Road"
+		    ], 
+		    "city": "Bedrock", 
+		    "state": "Hanna Barbera", 
+		    "zipcode": "12345", 
+		    "country": "USA"
+		}
+	    }, 
+	    "net": [
+		"fred@bedrock.org", 
+		"fred.flintstone@gravel.com"
+	    ], 
+	    "fields": {
+		"catchphrase": "\"Yabba dabba doo!\"", 
+		"kids": "Pebbles, Bam-Bam", 
+		"spouse": "Wilma"
+	    }
+	}
+    ]
+}
