@@ -27,6 +27,9 @@ To install and run it:
 To build source distributions from the checked-out Mercurial_ repo:
     hgtools_
 
+To run unit tests:
+    pytest_
+
 Installation
 ============
 
@@ -245,5 +248,6 @@ zondo42@gmail.com.  Patches will also be welcome!
 .. _Savannah: https://savannah.nongnu.org/projects/bbdb
 .. _hgtools: https://pypi.python.org/pypi/hgtools
 .. _pyparsing: https://pypi.python.org/pypi/pyparsing
+.. _pytest: https://pypi.python.org/pypi/pytest
 .. _six: https://pypi.python.org/pypi/six
 .. _voluptuous: https://pypi.python.org/pypi/voluptuous
