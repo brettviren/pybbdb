@@ -23,7 +23,7 @@ setup(name             = info.__title__,
       description      = info.__desc__,
       long_description = "\n" + open(readme).read(),
       url              = info.__url__,
-      classifiers      = info.__classifiers__,
+      classifiers      = info.__classifiers__.strip().split("\n"),
       license          = info.__license__,
 
       packages         = ["bbdb"],
