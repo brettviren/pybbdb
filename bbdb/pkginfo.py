@@ -20,6 +20,8 @@ Operating System :: Microsoft :: Windows
 Operating System :: POSIX :: Linux
 Operating System :: Unix
 Programming Language :: Python :: 2.7
+Programming Language :: Python :: 3
+Programming Language :: Python :: 3.3
 Topic :: Communications :: Email :: Address Book
 Topic :: Database"
 """                                     # noqa
