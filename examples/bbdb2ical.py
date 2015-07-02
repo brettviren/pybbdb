@@ -6,8 +6,6 @@ Requires:
 """
 
 import vobject
-from vobject.vcard import Name, Address
-
 import datetime as dt
 from bbdb.utils import anniversaries, ordinal
 
