@@ -14,7 +14,7 @@ __classifiers__ = """
 Development Status :: 4 - Beta
 Environment :: Console
 Intended Audience :: Developers
-License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)
+License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)
 Natural Language :: English
 Operating System :: Microsoft :: Windows
 Operating System :: POSIX :: Linux
@@ -22,6 +22,7 @@ Operating System :: Unix
 Programming Language :: Python :: 2.7
 Programming Language :: Python :: 3
 Programming Language :: Python :: 3.3
+Programming Language :: Python :: 3.4
 Topic :: Communications :: Email :: Address Book
 Topic :: Database
-"""                                     # noqa
+"""
