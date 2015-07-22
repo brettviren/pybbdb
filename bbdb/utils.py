@@ -2,6 +2,8 @@
 Various utilities.
 """
 
+from __future__ import print_function
+
 import os
 import subprocess
 
@@ -22,7 +24,7 @@ class SortedDict(OrderedDict):
         return list(self.items()) < list(other.items())
 
     def sort(self):
-        items = self.items()
+        items = [(k, v) for (k, v) in self.items()]
         self.clear()
         self.update(sorted(items))
 
@@ -98,4 +100,4 @@ def quote(string):
 
 if __name__ == "__main__":
     for num in range(30):
-        print ordinal(num)
+        print(ordinal(num))
