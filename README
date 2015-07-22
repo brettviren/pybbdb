@@ -229,8 +229,8 @@ the ``fromdict`` method::
 Release history
 ===============
 
-Version 0.3 (unreleased)
-------------------------
+Version 0.3 (22 July 2015)
+--------------------------
 
 * Bugfix: get things working properly with Python 3.
 
