@@ -129,17 +129,21 @@ fields::
     >>> fred.fields
     SortedDict([('catchphrase', '"Yabba dabba doo!"'), ('kids', 'Pebbles, Bam-Bam'), ('spouse', 'Wilma')])
 
+Field values can also have newlines::
+
+    >>> barney.add_field("pets", "brontosaurus\npterodactyl")
+
 Reading and writing BBDB files
 ------------------------------
 
 The ``write()`` method will write the database to a stream (default
 ``stdout``) in a format suitable for use by GNU Emacs::
 
-    >>> db.write()                        # doctest: +ELLIPSIS
+    >>> db.write()                        # doctest: +ELLIPSIS +REPORT_UDIFF
     ;; -*-coding: utf-8-emacs;-*-
     ;;; file-version: 6
-    ;;; user-fields: (catchphrase kids spouse)
-    ["Barney" "Rubble" nil nil nil nil nil nil nil]
+    ;;; user-fields: (catchphrase kids pets spouse)
+    ["Barney" "Rubble" nil nil nil nil nil ((pets . "brontosaurus\npterodactyl")) nil]
     ["Fred" "Flintstone" ("Freddie") "Slate Rock & Gravel" (["Home" "555-1234"] ...
 
 The convenience ``write_file()`` method will put that in a file::
@@ -179,7 +183,9 @@ serialize it to other formats.  For example, JSON::
                 "phone": {}, 
                 "address": {}, 
                 "net": [], 
-                "fields": {}
+                "fields": {
+                    "pets": "brontosaurus\\npterodactyl"
+                }
             }, 
             {
                 "firstname": "Fred", 

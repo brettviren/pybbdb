@@ -165,7 +165,7 @@ class Record(SortedDict):
         self["net"].extend(names)
 
     def add_field(self, tag, text):
-        self["fields"][tag] = text
+        self["fields"][tag] = text.replace("\n", r'\n')
         self["fields"].sort()
 
     @property
