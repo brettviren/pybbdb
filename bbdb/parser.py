@@ -65,9 +65,12 @@ def make_grammar():
                 "net": t[0].net or [],
                 "fields": t[0].fields or {}}
 
+    def make_string(t):
+        return t[0][1:-1].replace(r'\"', '"')
+
     # Define the low-level entities.
-    string = QuotedString(quoteChar='"', escChar='\\')
-    string.setParseAction(lambda t: t[0])
+    string = QuotedString(quoteChar='"', escChar='\\', unquoteResults=False)
+    string.setParseAction(make_string)
 
     nil = Keyword("nil")
     nil.setParseAction(lambda t: [None])
