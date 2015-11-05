@@ -12,7 +12,8 @@ def validate(data):
     try:
         return database(data)
     except MultipleInvalid as e:
-        raise ValueError(str(e))
+        path = '.'.join(map(str, e.path))
+        raise ValueError("%s: %s" % (path, e.msg))
 
 
 address = Schema({Required('location'): [text],
@@ -39,10 +40,7 @@ database = Schema({'coding': text,
 
 if __name__ == "__main__":
     import json
-    from pprint import pprint
-
     with open("schema.json") as fp:
         data = json.load(fp)
 
-    pprint(data)
     validate(data)
