@@ -235,8 +235,10 @@ Release history
 Version 0.4 (unreleased)
 ------------------------
 
-* Bugfix: add support for newlines in fields.
 * Use pytest for unit tests.
+
+* Bugfix: add support for newlines in fields.
+* Bugfix: allow last name to be nil.
 
 Version 0.3 (22 July 2015)
 --------------------------
