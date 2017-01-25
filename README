@@ -24,9 +24,6 @@ Requirements
 To install and run it:
     pyparsing_, voluptuous_ and six_
 
-To build source distributions from the checked-out Mercurial_ repo:
-    hgtools_
-
 To run unit tests:
     pytest_
 
@@ -35,7 +32,7 @@ Installation
 
 The usual incantation will install things::
 
-    python setup.py install
+    pip install pybbdb
 
 Usage
 =====
@@ -235,6 +232,12 @@ the ``fromdict`` method::
 Release history
 ===============
 
+Version 0.4 (unreleased)
+------------------------
+
+* Bugfix: add support for newlines in fields.
+* Use pytest for unit tests.
+
 Version 0.3 (22 July 2015)
 --------------------------
 
@@ -268,7 +271,6 @@ zondo42@gmail.com.  Patches will also be welcome!
 .. _Mercurial: http://mercurial.selenic.com
 .. _GNU Emacs: https://www.gnu.org/software/emacs
 .. _Savannah: https://savannah.nongnu.org/projects/bbdb
-.. _hgtools: https://pypi.python.org/pypi/hgtools
 .. _pyparsing: https://pypi.python.org/pypi/pyparsing
 .. _pytest: https://pypi.python.org/pypi/pytest
 .. _six: https://pypi.python.org/pypi/six

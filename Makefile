@@ -5,14 +5,17 @@ SETUP  = $(PYTHON) setup.py
 
 CLEANFILES = build dist *.egg* *.zip *.el __pycache__ .tox
 
-.DEFAULT:;	@ $(SETUP) $@
-.PHONY:		build
+.DEFAULT:;	@ $(SETUP) $@ $(OPTS)
+.PHONY:		build doc
 
-all:		build
+all:		develop
 
-build:;		@ $(SETUP) $@
+doc build:;	@ $(SETUP) $@
 
-test:;		$(PYTHON) -m doctest README
+doctest:;	$(PYTHON) -m doctest README
 
-clean:;		@ $(SETUP) $@
+tags:;		find . -name '*.py' | xargs etags
+
+clean:;		$(SETUP) $@
+		find . -name '*.py[co]' | xargs rm
 		rm -rf $(CLEANFILES)
