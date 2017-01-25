@@ -105,7 +105,7 @@ def make_grammar():
     fields.setParseAction(make_dict)
 
     # Other parts of an entry.
-    name = string("firstname") + string("lastname")
+    name = string("firstname") + Or([string("lastname"), nil])
     company = Or([string, nil])("company")
 
     aka = Or([Paren(OneOrMore(string)), nil])("aka")
