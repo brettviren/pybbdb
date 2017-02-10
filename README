@@ -232,8 +232,8 @@ the ``fromdict`` method::
 Release history
 ===============
 
-Version 0.4 (unreleased)
-------------------------
+Version 0.4 (10 February 2017)
+------------------------------
 
 * Use pytest for unit tests.
 
